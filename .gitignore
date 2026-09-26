@@ -9,4 +9,5 @@ dist/
 uploads/
 logs/
 docs/
-
+AGENTS.md
+design.md
