@@ -73,7 +73,7 @@ export function createNavigation(currentUser, onNavigate, onLogout, { unreadCoun
     });
     const logoutButton = element('button', {
       className: 'sidebar__logout',
-      attributes: { type: 'button' },
+      attributes: { type: 'button', 'aria-label': '退出登录' },
       children: [createIcon('logout'), element('span', { textContent: '退出登录' })]
     });
     logoutButton.addEventListener('click', () => void onLogout?.());

@@ -13,8 +13,8 @@ export async function renderLoginPage({ root, authStore, navigate, searchParams,
     children: [
       createPageHeader({
         eyebrow: 'TEAMFLOW',
-        title: '欢迎回来',
-        description: '使用原生 Fetch、JWT 与会话恢复连接你的团队工作区。'
+        title: '让协作保持同一方向。',
+        description: '在一个工作区里组织团队、推进项目、跟进任务与消息。'
       }),
       element('div', {
         className: 'auth-grid',

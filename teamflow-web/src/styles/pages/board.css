@@ -7,7 +7,7 @@
 }
 
 .board-column {
-  background: #eef2f6;
+  background: var(--color-surface-subtle);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   min-width: 0;
@@ -43,7 +43,6 @@
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
-  box-shadow: 0 1px 3px rgb(16 24 40 / 5%);
   cursor: pointer;
   display: grid;
   gap: var(--space-2);
@@ -51,7 +50,7 @@
   transition: border-color 140ms ease, box-shadow 140ms ease, transform 140ms ease;
 }
 
-.task-card:hover { border-color: #a5b3c6; box-shadow: var(--shadow-sm); transform: translateY(-1px); }
+.task-card:hover { border-color: var(--color-border-strong); box-shadow: var(--shadow-sm); transform: translateY(-1px); }
 .task-card[draggable="true"] { cursor: grab; }
 .task-card--dragging { opacity: 0.52; transform: rotate(1deg); }
 .task-card--busy { opacity: 0.62; pointer-events: none; }
