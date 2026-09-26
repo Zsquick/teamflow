@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.teamflow.core.team.mapper.TeamInvitationMapper">
+
+    <resultMap id="invitationResultMap" type="com.teamflow.core.team.domain.TeamInvitation">
+        <constructor>
+            <idArg column="id" javaType="string"/>
+            <arg column="team_id" javaType="string"/>
+            <arg column="inviter_id" javaType="string"/>
+            <arg column="invitee_id" javaType="string"/>
+            <arg column="invited_role" javaType="com.teamflow.core.team.domain.TeamRole"/>
+            <arg column="invitation_status" javaType="com.teamflow.core.team.domain.TeamInvitationStatus"/>
+            <arg column="version" javaType="_int"/>
+            <arg column="created_at" javaType="string"/>
+            <arg column="updated_at" javaType="string"/>
+            <arg column="responded_at" javaType="string"/>
+            <arg column="revoked_by" javaType="string"/>
+        </constructor>
+    </resultMap>
+
+    <resultMap id="detailsResultMap" type="com.teamflow.core.team.dto.TeamInvitationDetails">
+        <constructor>
+            <idArg column="id" javaType="string"/>
+            <arg column="team_id" javaType="string"/>
+            <arg column="team_name" javaType="string"/>
+            <arg column="inviter_id" javaType="string"/>
+            <arg column="inviter_display_name" javaType="string"/>
+            <arg column="invitee_id" javaType="string"/>
+            <arg column="invitee_username" javaType="string"/>
+            <arg column="invitee_email" javaType="string"/>
+            <arg column="invitee_display_name" javaType="string"/>
+            <arg column="invited_role" javaType="com.teamflow.core.team.domain.TeamRole"/>
+            <arg column="invitation_status" javaType="com.teamflow.core.team.domain.TeamInvitationStatus"/>
+            <arg column="version" javaType="_int"/>
+            <arg column="created_at" javaType="string"/>
+            <arg column="updated_at" javaType="string"/>
+            <arg column="responded_at" javaType="string"/>
+        </constructor>
+    </resultMap>
+
+    <sql id="invitationColumns">
+        id, team_id, inviter_id, invitee_id, invited_role,
+        invitation_status, version, created_at, updated_at,
+        responded_at, revoked_by
+    </sql>
+
+    <insert id="insert">
+        INSERT INTO team_invitations (
+        <include refid="invitationColumns"/>
+        ) VALUES (
+        #{id}, #{teamId}, #{inviterId}, #{inviteeId}, #{invitedRole},
+        #{status}, #{version}, #{createdAt}, #{updatedAt},
+        #{respondedAt}, #{revokedBy}
+        )
+    </insert>
+
+    <select id="findById" resultMap="invitationResultMap">
+        SELECT <include refid="invitationColumns"/>
+        FROM team_invitations
+        WHERE id = #{id}
+    </select>
+
+    <select id="findByIdForUpdate" resultMap="invitationResultMap">
+        SELECT <include refid="invitationColumns"/>
+        FROM team_invitations
+        WHERE id = #{id}
+        FOR UPDATE
+    </select>
+
+    <select id="findPendingByTeamAndInvitee" resultMap="invitationResultMap">
+        SELECT <include refid="invitationColumns"/>
+        FROM team_invitations
+        WHERE team_id = #{teamId}
+          AND invitee_id = #{inviteeId}
+          AND invitation_status = 'PENDING'
+        ORDER BY created_at ASC, id ASC
+        LIMIT 1 OFFSET 0
+    </select>
+
+    <sql id="detailsColumns">
+        i.id,
+        i.team_id,
+        t.name AS team_name,
+        i.inviter_id,
+        inviter.display_name AS inviter_display_name,
+        i.invitee_id,
+        invitee.username AS invitee_username,
+        invitee.email AS invitee_email,
+        invitee.display_name AS invitee_display_name,
+        i.invited_role,
+        i.invitation_status,
+        i.version,
+        i.created_at,
+        i.updated_at,
+        i.responded_at
+    </sql>
+
+    <select id="findDetailsByInvitee" resultMap="detailsResultMap">
+        SELECT <include refid="detailsColumns"/>
+        FROM team_invitations i
+        INNER JOIN teams t ON t.id = i.team_id
+        INNER JOIN users inviter ON inviter.id = i.inviter_id
+        INNER JOIN users invitee ON invitee.id = i.invitee_id
+        WHERE i.invitee_id = #{inviteeId}
+        ORDER BY i.created_at DESC, i.id DESC
+    </select>
+
+    <select id="findDetailsByTeam" resultMap="detailsResultMap">
+        SELECT <include refid="detailsColumns"/>
+        FROM team_invitations i
+        INNER JOIN teams t ON t.id = i.team_id
+        INNER JOIN users inviter ON inviter.id = i.inviter_id
+        INNER JOIN users invitee ON invitee.id = i.invitee_id
+        WHERE i.team_id = #{teamId}
+        ORDER BY i.created_at DESC, i.id DESC
+    </select>
+
+    <select id="findDetailsById" resultMap="detailsResultMap">
+        SELECT <include refid="detailsColumns"/>
+        FROM team_invitations i
+        INNER JOIN teams t ON t.id = i.team_id
+        INNER JOIN users inviter ON inviter.id = i.inviter_id
+        INNER JOIN users invitee ON invitee.id = i.invitee_id
+        WHERE i.id = #{id}
+    </select>
+
+    <update id="updateState">
+        UPDATE team_invitations
+        SET invitation_status = #{invitation.status},
+            version = #{invitation.version},
+            updated_at = #{invitation.updatedAt},
+            responded_at = #{invitation.respondedAt},
+            revoked_by = #{invitation.revokedBy}
+        WHERE id = #{invitation.id}
+          AND invitation_status = #{expectedStatus}
+          AND version = #{expectedVersion}
+    </update>
+
+</mapper>

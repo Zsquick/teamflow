@@ -1,0 +1,117 @@
+name: verify
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+      - name: Require Docker for integration tests
+        run: docker info
+      - name: Verify backend
+        run: mvn --batch-mode clean verify
+      - name: Assert middleware integration tests executed
+        run: |
+          grep -Eq 'tests="[1-9][0-9]*"' teamflow-server/target/surefire-reports/TEST-com.teamflow.integration.team.TeamPersistenceIntegrationTest.xml
+          grep -Eq 'tests="[1-9][0-9]*"' teamflow-server/target/surefire-reports/TEST-com.teamflow.integration.notification.RedisNotificationUnreadCountCacheIntegrationTest.xml
+          grep -Eq 'tests="[1-9][0-9]*"' teamflow-server/target/surefire-reports/TEST-com.teamflow.integration.messaging.RabbitTopologyIntegrationTest.xml
+
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: teamflow-web/package-lock.json
+      - name: Install frontend dependencies
+        working-directory: teamflow-web
+        run: npm ci
+      - name: Build frontend
+        working-directory: teamflow-web
+        run: npm run build
+
+  deployment-config:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate temporary TLS certificate
+        run: |
+          openssl req -x509 -newkey rsa:2048 -sha256 -nodes -days 1 \
+            -subj "/CN=teamflow-ci.local" \
+            -keyout "$RUNNER_TEMP/teamflow-ci-key.pem" \
+            -out "$RUNNER_TEMP/teamflow-ci-cert.pem"
+      - name: Validate HTTP and production Compose configurations
+        run: |
+          docker compose --env-file deploy/.env.example \
+            -f deploy/compose.yaml \
+            -f deploy/compose.app.yaml \
+            config --quiet
+          docker compose --env-file deploy/.env.example \
+            -f deploy/compose.yaml \
+            -f deploy/compose.app.yaml \
+            -f deploy/compose.prod.yaml \
+            config --quiet
+      - name: Validate TLS production Compose configuration
+        env:
+          TEAMFLOW_TLS_CERTIFICATE_FILE: ${{ runner.temp }}/teamflow-ci-cert.pem
+          TEAMFLOW_TLS_PRIVATE_KEY_FILE: ${{ runner.temp }}/teamflow-ci-key.pem
+        run: |
+          docker compose --env-file deploy/.env.example \
+            -f deploy/compose.yaml \
+            -f deploy/compose.app.yaml \
+            -f deploy/compose.prod.yaml \
+            -f deploy/compose.tls.yaml \
+            config --quiet
+
+  docker-images:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: server
+            dockerfile: teamflow-server/Dockerfile
+            tag: teamflow-server:ci
+          - name: web
+            dockerfile: teamflow-web/Dockerfile
+            tag: teamflow-web:ci
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build ${{ matrix.name }} image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          load: true
+          push: false
+          tags: ${{ matrix.tag }}
+          cache-from: type=gha,scope=teamflow-${{ matrix.name }}
+          cache-to: type=gha,mode=max,scope=teamflow-${{ matrix.name }}
+      - name: Validate HTTP and TLS Nginx configurations
+        if: matrix.name == 'web'
+        run: |
+          docker run --rm --add-host server:127.0.0.1 teamflow-web:ci nginx -t
+          openssl req -x509 -newkey rsa:2048 -sha256 -nodes -days 1 \
+            -subj "/CN=teamflow-ci.local" \
+            -keyout "$RUNNER_TEMP/teamflow-ci-key.pem" \
+            -out "$RUNNER_TEMP/teamflow-ci-cert.pem"
+          chmod 644 "$RUNNER_TEMP/teamflow-ci-key.pem"
+          docker run --rm --add-host server:127.0.0.1 \
+            -v "$PWD/deploy/nginx/tls-example.conf:/etc/nginx/conf.d/default.conf:ro" \
+            -v "$RUNNER_TEMP/teamflow-ci-cert.pem:/run/secrets/teamflow_tls_certificate:ro" \
+            -v "$RUNNER_TEMP/teamflow-ci-key.pem:/run/secrets/teamflow_tls_private_key:ro" \
+            teamflow-web:ci nginx -t

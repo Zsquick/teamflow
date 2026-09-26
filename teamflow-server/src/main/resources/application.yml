@@ -1,0 +1,128 @@
+spring:
+  application:
+    name: teamflow-server
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:local}
+  lifecycle:
+    timeout-per-shutdown-phase: 10s
+  datasource:
+    url: ${TEAMFLOW_DB_URL:jdbc:mysql://localhost:3306/teamflow?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai}
+    username: ${TEAMFLOW_DB_USERNAME:teamflow}
+    password: ${TEAMFLOW_DB_PASSWORD:teamflow_dev_password}
+    hikari:
+      maximum-pool-size: ${TEAMFLOW_DB_POOL_SIZE:10}
+      minimum-idle: ${TEAMFLOW_DB_MIN_IDLE:2}
+      connection-timeout: ${TEAMFLOW_DB_CONNECTION_TIMEOUT:3000}
+      validation-timeout: ${TEAMFLOW_DB_VALIDATION_TIMEOUT:2000}
+  data:
+    redis:
+      host: ${TEAMFLOW_REDIS_HOST:localhost}
+      port: ${TEAMFLOW_REDIS_PORT:6379}
+      password: ${TEAMFLOW_REDIS_PASSWORD:teamflow_dev_password}
+  rabbitmq:
+    host: ${TEAMFLOW_RABBIT_HOST:localhost}
+    port: ${TEAMFLOW_RABBIT_PORT:5672}
+    username: ${TEAMFLOW_RABBIT_USERNAME:teamflow}
+    password: ${TEAMFLOW_RABBIT_PASSWORD:teamflow_dev_password}
+    publisher-confirm-type: correlated
+    publisher-returns: true
+    template:
+      mandatory: true
+    listener:
+      simple:
+        acknowledge-mode: auto
+        default-requeue-rejected: false
+        prefetch: 20
+        concurrency: 1
+        max-concurrency: 3
+        retry:
+          enabled: true
+          initial-interval: 1s
+          max-attempts: 3
+          multiplier: 2
+          max-interval: 10s
+  flyway:
+    enabled: ${TEAMFLOW_FLYWAY_ENABLED:false}
+    locations: classpath:db/migration
+  batch:
+    jdbc:
+      initialize-schema: never
+    job:
+      enabled: false
+  servlet:
+    multipart:
+      max-file-size: ${TEAMFLOW_MAX_FILE_SIZE:20MB}
+      max-request-size: ${TEAMFLOW_MAX_REQUEST_SIZE:21MB}
+
+mybatis:
+  mapper-locations: classpath*:mapper/**/*.xml
+  configuration:
+    map-underscore-to-camel-case: true
+
+teamflow:
+  scheduler:
+    pool-size: ${TEAMFLOW_SCHEDULER_POOL_SIZE:3}
+  cors:
+    allowed-origins: ${TEAMFLOW_CORS_ALLOWED_ORIGINS:http://localhost:5173}
+  jwt:
+    issuer: teamflow
+    access-token-ttl: PT15M
+    refresh-token-ttl: P7D
+    secret-base64: ${TEAMFLOW_JWT_SECRET_BASE64:}
+  storage:
+    root: ${TEAMFLOW_STORAGE_ROOT:./uploads}
+    max-file-size: ${TEAMFLOW_MAX_FILE_SIZE:20MB}
+  sse:
+    timeout: ${TEAMFLOW_SSE_TIMEOUT:PT30M}
+    heartbeat-interval: ${TEAMFLOW_SSE_HEARTBEAT_INTERVAL:PT20S}
+  notification-cache:
+    unread-count-ttl: ${TEAMFLOW_NOTIFICATION_UNREAD_CACHE_TTL:PT5M}
+  outbox:
+    batch-size: ${TEAMFLOW_OUTBOX_BATCH_SIZE:50}
+    max-attempts: ${TEAMFLOW_OUTBOX_MAX_ATTEMPTS:5}
+    claim-ttl: ${TEAMFLOW_OUTBOX_CLAIM_TTL:PT30S}
+    confirm-timeout: ${TEAMFLOW_OUTBOX_CONFIRM_TIMEOUT:PT5S}
+    retry-initial-delay: ${TEAMFLOW_OUTBOX_RETRY_INITIAL_DELAY:PT2S}
+    retry-max-delay: ${TEAMFLOW_OUTBOX_RETRY_MAX_DELAY:PT1M}
+    scan-interval: ${TEAMFLOW_OUTBOX_SCAN_INTERVAL:PT2S}
+  operations:
+    due-reminder-window: ${TEAMFLOW_DUE_REMINDER_WINDOW:PT24H}
+    due-batch-size: ${TEAMFLOW_DUE_BATCH_SIZE:200}
+    due-lock-ttl: ${TEAMFLOW_DUE_LOCK_TTL:PT4M}
+    due-scan-interval: ${TEAMFLOW_DUE_SCAN_INTERVAL:PT5M}
+    temporary-file-retention: ${TEAMFLOW_TEMP_FILE_RETENTION:PT24H}
+    temporary-file-max-depth: ${TEAMFLOW_TEMP_FILE_MAX_DEPTH:4}
+    temp-cleanup-interval: ${TEAMFLOW_TEMP_CLEANUP_INTERVAL:PT1H}
+  webhook:
+    enabled: ${TEAMFLOW_WEBHOOK_ENABLED:false}
+    endpoint: ${TEAMFLOW_WEBHOOK_ENDPOINT:http://localhost:9090/events}
+    hmac-secret: ${TEAMFLOW_WEBHOOK_HMAC_SECRET:change-before-enabling-webhook}
+    timeout: ${TEAMFLOW_WEBHOOK_TIMEOUT:PT5S}
+  rate-limit:
+    enabled: ${TEAMFLOW_RATE_LIMIT_ENABLED:true}
+    login:
+      max-requests: ${TEAMFLOW_LOGIN_RATE_LIMIT:10}
+      window: ${TEAMFLOW_LOGIN_RATE_WINDOW:PT1M}
+    registration:
+      max-requests: ${TEAMFLOW_REGISTRATION_RATE_LIMIT:5}
+      window: ${TEAMFLOW_REGISTRATION_RATE_WINDOW:PT10M}
+    refresh:
+      max-requests: ${TEAMFLOW_REFRESH_RATE_LIMIT:30}
+      window: ${TEAMFLOW_REFRESH_RATE_WINDOW:PT1M}
+    upload:
+      max-requests: ${TEAMFLOW_UPLOAD_RATE_LIMIT:30}
+      window: ${TEAMFLOW_UPLOAD_RATE_WINDOW:PT1M}
+
+server:
+  port: 8080
+  shutdown: graceful
+  forward-headers-strategy: native
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: when_authorized

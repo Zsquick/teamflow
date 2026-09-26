@@ -1,0 +1,81 @@
+@import './reset.css';
+@import './layout.css';
+@import './components.css';
+@import './pages/board.css';
+
+:root {
+  --color-bg: #f4f6f9;
+  --color-surface: #ffffff;
+  --color-surface-subtle: #f8fafc;
+  --color-surface-muted: #eef2f6;
+  --color-text: #172033;
+  --color-heading: #101828;
+  --color-muted: #667085;
+  --color-border: #d8e0ea;
+  --color-border-strong: #b8c5d4;
+  --color-primary: #244db7;
+  --color-primary-dark: #183b91;
+  --color-primary-soft: #edf2ff;
+  --color-success: #17725b;
+  --color-success-soft: #eaf7f1;
+  --color-danger: #b4233a;
+  --color-danger-dark: #8d1b2d;
+  --color-danger-soft: #fff0f2;
+  --color-warning: #94600b;
+  --color-warning-soft: #fff6df;
+  --shadow-sm: 0 1px 2px rgb(16 24 40 / 5%), 0 4px 12px rgb(16 24 40 / 4%);
+  --shadow-md: 0 12px 32px rgb(16 24 40 / 12%);
+  --shadow-lg: 0 24px 64px rgb(16 24 40 / 22%);
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+  --content-max: 1440px;
+  font-family: Inter, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-text);
+  line-height: 1.6;
+}
+
+h1,
+h2,
+h3,
+strong {
+  line-height: 1.25;
+}
+
+h1 {
+  color: var(--color-heading);
+  font-size: clamp(1.65rem, 3vw, 2.15rem);
+  letter-spacing: -0.025em;
+}
+
+h2 {
+  color: var(--color-heading);
+  font-size: 1.16rem;
+}
+
+h3 {
+  font-size: 1rem;
+}
+
+code {
+  overflow-wrap: anywhere;
+  color: #475569;
+  font-size: 0.76rem;
+}
+
+::selection {
+  background: #cdd7ff;
+}

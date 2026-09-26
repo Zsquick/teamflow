@@ -1,0 +1,20 @@
+<!-- JaCoCo 0.8.13 XML report format (EPL-2.0). -->
+<!ELEMENT report (sessioninfo*, (group* | package*), counter*)>
+<!ATTLIST report name CDATA #REQUIRED>
+<!ELEMENT sessioninfo EMPTY>
+<!ATTLIST sessioninfo id CDATA #REQUIRED start CDATA #REQUIRED dump CDATA #REQUIRED>
+<!ELEMENT group ((group* | package*), counter*)>
+<!ATTLIST group name CDATA #REQUIRED>
+<!ELEMENT package ((class | sourcefile)*, counter*)>
+<!ATTLIST package name CDATA #REQUIRED>
+<!ELEMENT class (method*, counter*)>
+<!ATTLIST class name CDATA #REQUIRED sourcefilename CDATA #IMPLIED>
+<!ELEMENT method (counter*)>
+<!ATTLIST method name CDATA #REQUIRED desc CDATA #REQUIRED line CDATA #IMPLIED>
+<!ELEMENT sourcefile (line*, counter*)>
+<!ATTLIST sourcefile name CDATA #REQUIRED>
+<!ELEMENT line EMPTY>
+<!ATTLIST line nr CDATA #REQUIRED mi CDATA #IMPLIED ci CDATA #IMPLIED mb CDATA #IMPLIED cb CDATA #IMPLIED>
+<!ELEMENT counter EMPTY>
+<!ATTLIST counter type (INSTRUCTION|BRANCH|LINE|COMPLEXITY|METHOD|CLASS) #REQUIRED
+                  missed CDATA #REQUIRED covered CDATA #REQUIRED>

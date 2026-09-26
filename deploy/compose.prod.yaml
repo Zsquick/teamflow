@@ -1,0 +1,48 @@
+services:
+  mysql:
+    restart: unless-stopped
+    cpus: "${TEAMFLOW_MYSQL_CPUS:-1.00}"
+    mem_limit: "${TEAMFLOW_MYSQL_MEMORY_LIMIT:-768m}"
+    pids_limit: ${TEAMFLOW_MYSQL_PIDS_LIMIT:-256}
+    security_opt:
+      - no-new-privileges:true
+
+  redis:
+    restart: unless-stopped
+    cpus: "${TEAMFLOW_REDIS_CPUS:-0.50}"
+    mem_limit: "${TEAMFLOW_REDIS_MEMORY_LIMIT:-256m}"
+    pids_limit: ${TEAMFLOW_REDIS_PIDS_LIMIT:-128}
+    security_opt:
+      - no-new-privileges:true
+
+  rabbitmq:
+    restart: unless-stopped
+    cpus: "${TEAMFLOW_RABBIT_CPUS:-1.00}"
+    mem_limit: "${TEAMFLOW_RABBIT_MEMORY_LIMIT:-512m}"
+    pids_limit: ${TEAMFLOW_RABBIT_PIDS_LIMIT:-256}
+    security_opt:
+      - no-new-privileges:true
+
+  server:
+    restart: unless-stopped
+    cpus: "${TEAMFLOW_SERVER_CPUS:-1.50}"
+    mem_limit: "${TEAMFLOW_SERVER_MEMORY_LIMIT:-768m}"
+    pids_limit: ${TEAMFLOW_SERVER_PIDS_LIMIT:-256}
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,size=128m
+    cap_drop:
+      - ALL
+    stop_grace_period: 60s
+
+  web:
+    restart: unless-stopped
+    cpus: "${TEAMFLOW_WEB_CPUS:-0.50}"
+    mem_limit: "${TEAMFLOW_WEB_MEMORY_LIMIT:-128m}"
+    pids_limit: ${TEAMFLOW_WEB_PIDS_LIMIT:-64}
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,size=64m
+    cap_drop:
+      - ALL
+    stop_grace_period: 10s

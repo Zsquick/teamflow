@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.teamflow.core.notification.mapper.NotificationMapper">
+
+    <resultMap id="notificationResultMap"
+               type="com.teamflow.core.notification.domain.Notification">
+        <constructor>
+            <idArg column="id" javaType="string"/>
+            <arg column="user_id" javaType="string"/>
+            <arg column="notification_type"
+                 javaType="com.teamflow.core.notification.domain.NotificationType"/>
+            <arg column="title" javaType="string"/>
+            <arg column="content" javaType="string"/>
+            <arg column="event_key" javaType="string"/>
+            <arg column="is_read" javaType="_boolean"/>
+            <arg column="created_at" javaType="string"/>
+            <arg column="read_at" javaType="string"/>
+        </constructor>
+    </resultMap>
+
+    <sql id="notificationColumns">
+        id,
+        user_id,
+        notification_type,
+        title,
+        content,
+        event_key,
+        is_read,
+        created_at,
+        read_at
+    </sql>
+
+    <insert id="insert">
+        INSERT INTO notifications (
+        <include refid="notificationColumns"/>
+        ) VALUES (
+        #{id},
+        #{userId},
+        #{type},
+        #{title},
+        #{content},
+        #{eventKey},
+        #{read},
+        #{createdAt},
+        #{readAt}
+        )
+    </insert>
+
+    <select id="findByEventKey" resultMap="notificationResultMap">
+        SELECT
+        <include refid="notificationColumns"/>
+        FROM notifications
+        WHERE event_key = #{eventKey}
+    </select>
+
+    <select id="findByIdAndUserId"
+            resultMap="notificationResultMap">
+        SELECT
+        <include refid="notificationColumns"/>
+        FROM notifications
+        WHERE id = #{id}
+          AND user_id = #{userId}
+    </select>
+
+    <select id="findByUserId" resultMap="notificationResultMap">
+        SELECT
+        <include refid="notificationColumns"/>
+        FROM notifications
+        WHERE user_id = #{userId}
+        ORDER BY created_at DESC, id DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="countByUserId" resultType="long">
+        SELECT COUNT(*)
+        FROM notifications
+        WHERE user_id = #{userId}
+    </select>
+
+    <select id="countUnread" resultType="long">
+        SELECT COUNT(*)
+        FROM notifications
+        WHERE user_id = #{userId}
+          AND is_read = 0
+    </select>
+
+    <update id="markRead">
+        UPDATE notifications
+        SET is_read = 1,
+            read_at = #{readAt}
+        WHERE id = #{id}
+          AND user_id = #{userId}
+          AND is_read = 0
+    </update>
+</mapper>

@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.teamflow.core.project.mapper.ProjectMapper">
+
+    <resultMap id="projectResultMap"
+               type="com.teamflow.core.project.domain.Project">
+        <constructor>
+            <idArg column="id" javaType="string"/>
+            <arg column="team_id" javaType="string"/>
+            <arg column="name" javaType="string"/>
+            <arg column="project_key" javaType="string"/>
+            <arg column="description" javaType="string"/>
+            <arg column="project_status"
+                 javaType="com.teamflow.core.project.domain.ProjectStatus"/>
+            <arg column="created_by" javaType="string"/>
+            <arg column="version" javaType="_int"/>
+            <arg column="created_at" javaType="string"/>
+            <arg column="updated_at" javaType="string"/>
+        </constructor>
+    </resultMap>
+
+    <sql id="projectColumns">
+        id,
+        team_id,
+        name,
+        project_key,
+        description,
+        project_status,
+        created_by,
+        version,
+        created_at,
+        updated_at
+    </sql>
+
+    <insert id="insert">
+        INSERT INTO projects (
+        <include refid="projectColumns"/>
+        ) VALUES (
+        #{id},
+        #{teamId},
+        #{name},
+        #{projectKey},
+        #{description},
+        #{status},
+        #{createdBy},
+        #{version},
+        #{createdAt},
+        #{updatedAt}
+        )
+    </insert>
+
+    <select id="findById" resultMap="projectResultMap">
+        SELECT
+        <include refid="projectColumns"/>
+        FROM projects
+        WHERE id = #{id}
+    </select>
+
+    <select id="findByIdForUpdate" resultMap="projectResultMap">
+        SELECT
+        <include refid="projectColumns"/>
+        FROM projects
+        WHERE id = #{id}
+        FOR UPDATE
+    </select>
+
+    <select id="countByTeamIdAndProjectKey" resultType="int">
+        SELECT COUNT(*)
+        FROM projects
+        WHERE team_id = #{teamId}
+          AND project_key = #{projectKey}
+    </select>
+
+    <select id="findByTeamId" resultMap="projectResultMap">
+        SELECT
+        <include refid="projectColumns"/>
+        FROM projects
+        WHERE team_id = #{teamId}
+        ORDER BY created_at ASC, id ASC
+    </select>
+
+    <update id="update">
+        UPDATE projects
+        SET name = #{project.name},
+            description = #{project.description},
+            project_status = #{project.status},
+            version = version + 1,
+            updated_at = #{project.updatedAt}
+        WHERE id = #{project.id}
+          AND version = #{expectedVersion}
+    </update>
+</mapper>

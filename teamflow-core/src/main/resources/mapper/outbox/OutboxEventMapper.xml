@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.teamflow.core.outbox.mapper.OutboxEventMapper">
+
+    <resultMap id="outboxEventResultMap"
+               type="com.teamflow.core.outbox.domain.OutboxEvent">
+        <constructor>
+            <idArg column="id" javaType="string"/>
+            <arg column="event_key" javaType="string"/>
+            <arg column="event_type" javaType="string"/>
+            <arg column="task_id" javaType="string"/>
+            <arg column="project_id" javaType="string"/>
+            <arg column="task_version" javaType="_int"/>
+            <arg column="previous_assignee_id" javaType="string"/>
+            <arg column="assignee_id" javaType="string"/>
+            <arg column="operator_id" javaType="string"/>
+            <arg column="occurred_at" javaType="string"/>
+            <arg column="event_status"
+                 javaType="com.teamflow.core.outbox.domain.OutboxEventStatus"/>
+            <arg column="attempt_count" javaType="_int"/>
+            <arg column="next_attempt_at" javaType="string"/>
+            <arg column="locked_by" javaType="string"/>
+            <arg column="locked_at" javaType="string"/>
+            <arg column="published_at" javaType="string"/>
+            <arg column="last_error" javaType="string"/>
+            <arg column="created_at" javaType="string"/>
+            <arg column="updated_at" javaType="string"/>
+            <arg column="event_payload" javaType="string"/>
+        </constructor>
+    </resultMap>
+
+    <sql id="outboxEventColumns">
+        id,
+        event_key,
+        event_type,
+        task_id,
+        project_id,
+        task_version,
+        previous_assignee_id,
+        assignee_id,
+        operator_id,
+        occurred_at,
+        event_status,
+        attempt_count,
+        next_attempt_at,
+        locked_by,
+        locked_at,
+        published_at,
+        last_error,
+        created_at,
+        updated_at,
+        event_payload
+    </sql>
+
+    <insert id="insert">
+        INSERT INTO outbox_events (
+        <include refid="outboxEventColumns"/>
+        ) VALUES (
+        #{id},
+        #{eventKey},
+        #{eventType},
+        #{taskId},
+        #{projectId},
+        #{taskVersion},
+        #{previousAssigneeId},
+        #{assigneeId},
+        #{operatorId},
+        #{occurredAt},
+        #{status},
+        #{attemptCount},
+        #{nextAttemptAt},
+        #{lockedBy},
+        #{lockedAt},
+        #{publishedAt},
+        #{lastError},
+        #{createdAt},
+        #{updatedAt}
+        ,#{eventPayload}
+        )
+    </insert>
+
+    <select id="findDispatchCandidates"
+            resultMap="outboxEventResultMap">
+        SELECT
+        <include refid="outboxEventColumns"/>
+        FROM outbox_events
+        WHERE attempt_count &lt; #{maxAttempts}
+          AND (
+            (
+              event_status IN ('PENDING', 'RETRY')
+              AND next_attempt_at &lt;= #{now}
+            )
+            OR (
+              event_status = 'PROCESSING'
+              AND locked_at &lt;= #{staleBefore}
+            )
+          )
+        ORDER BY created_at ASC, id ASC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <update id="claim">
+        UPDATE outbox_events
+        SET event_status = 'PROCESSING',
+            attempt_count = attempt_count + 1,
+            locked_by = #{workerId},
+            locked_at = #{now},
+            updated_at = #{now}
+        WHERE id = #{id}
+          AND attempt_count &lt; #{maxAttempts}
+          AND (
+            (
+              event_status IN ('PENDING', 'RETRY')
+              AND next_attempt_at &lt;= #{now}
+            )
+            OR (
+              event_status = 'PROCESSING'
+              AND locked_at &lt;= #{staleBefore}
+            )
+          )
+    </update>
+
+    <update id="markExpiredClaimsFailed">
+        UPDATE outbox_events
+        SET event_status = 'FAILED',
+            locked_by = NULL,
+            locked_at = NULL,
+            last_error = #{lastError},
+            updated_at = #{updatedAt}
+        WHERE event_status = 'PROCESSING'
+          AND attempt_count &gt;= #{maxAttempts}
+          AND locked_at &lt;= #{staleBefore}
+    </update>
+
+    <update id="markPublished">
+        UPDATE outbox_events
+        SET event_status = 'PUBLISHED',
+            locked_by = NULL,
+            locked_at = NULL,
+            published_at = #{publishedAt},
+            last_error = NULL,
+            updated_at = #{publishedAt}
+        WHERE id = #{id}
+          AND event_status = 'PROCESSING'
+          AND locked_by = #{workerId}
+    </update>
+
+    <update id="markRetry">
+        UPDATE outbox_events
+        SET event_status = 'RETRY',
+            attempt_count = #{attemptCount},
+            next_attempt_at = #{nextAttemptAt},
+            locked_by = NULL,
+            locked_at = NULL,
+            last_error = #{lastError},
+            updated_at = #{updatedAt}
+        WHERE id = #{id}
+          AND event_status = 'PROCESSING'
+          AND locked_by = #{workerId}
+    </update>
+
+    <update id="markFailed">
+        UPDATE outbox_events
+        SET event_status = 'FAILED',
+            attempt_count = #{attemptCount},
+            locked_by = NULL,
+            locked_at = NULL,
+            last_error = #{lastError},
+            updated_at = #{updatedAt}
+        WHERE id = #{id}
+          AND event_status = 'PROCESSING'
+          AND locked_by = #{workerId}
+    </update>
+
+</mapper>

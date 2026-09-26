@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.teamflow.core.task.mapper.TaskMapper">
+
+    <resultMap id="taskResultMap"
+               type="com.teamflow.core.task.domain.Task">
+        <constructor>
+            <idArg column="id" javaType="string"/>
+            <arg column="project_id" javaType="string"/>
+            <arg column="title" javaType="string"/>
+            <arg column="description" javaType="string"/>
+            <arg column="task_status"
+                 javaType="com.teamflow.core.task.domain.TaskStatus"/>
+            <arg column="priority"
+                 javaType="com.teamflow.core.task.domain.TaskPriority"/>
+            <arg column="assignee_id" javaType="string"/>
+            <arg column="reporter_id" javaType="string"/>
+            <arg column="due_at" javaType="string"/>
+            <arg column="version" javaType="_int"/>
+            <arg column="created_at" javaType="string"/>
+            <arg column="updated_at" javaType="string"/>
+        </constructor>
+    </resultMap>
+
+    <resultMap id="taskStatusCountResultMap"
+               type="com.teamflow.core.task.mapper.TaskStatusCount">
+        <constructor>
+            <arg column="task_status"
+                 javaType="com.teamflow.core.task.domain.TaskStatus"/>
+            <arg column="task_count" javaType="_long"/>
+        </constructor>
+    </resultMap>
+
+    <resultMap id="assigneeCompletedCountResultMap"
+               type="com.teamflow.core.task.mapper.AssigneeCompletedCount">
+        <constructor>
+            <arg column="assignee_id" javaType="string"/>
+            <arg column="task_count" javaType="_long"/>
+        </constructor>
+    </resultMap>
+
+    <sql id="taskColumns">
+        id,
+        project_id,
+        title,
+        description,
+        task_status,
+        priority,
+        assignee_id,
+        reporter_id,
+        due_at,
+        version,
+        created_at,
+        updated_at
+    </sql>
+
+    <insert id="insert">
+        INSERT INTO tasks (
+        <include refid="taskColumns"/>,
+        deleted_at
+        ) VALUES (
+        #{id},
+        #{projectId},
+        #{title},
+        #{description},
+        #{status},
+        #{priority},
+        #{assigneeId},
+        #{reporterId},
+        #{dueAt},
+        #{version},
+        #{createdAt},
+        #{updatedAt},
+        NULL
+        )
+    </insert>
+
+    <insert id="batchInsert">
+        INSERT INTO tasks (
+        <include refid="taskColumns"/>,
+        deleted_at
+        ) VALUES
+        <foreach collection="tasks" item="task" separator=",">
+            (
+            #{task.id},
+            #{task.projectId},
+            #{task.title},
+            #{task.description},
+            #{task.status},
+            #{task.priority},
+            #{task.assigneeId},
+            #{task.reporterId},
+            #{task.dueAt},
+            #{task.version},
+            #{task.createdAt},
+            #{task.updatedAt},
+            NULL
+            )
+        </foreach>
+    </insert>
+
+    <select id="findById" resultMap="taskResultMap">
+        SELECT
+        <include refid="taskColumns"/>
+        FROM tasks
+        WHERE id = #{id}
+          AND deleted_at IS NULL
+    </select>
+
+    <select id="findByIdForUpdate" resultMap="taskResultMap">
+        SELECT
+        <include refid="taskColumns"/>
+        FROM tasks
+        WHERE id = #{id}
+          AND deleted_at IS NULL
+        FOR UPDATE
+    </select>
+
+    <select id="findByProjectId" resultMap="taskResultMap">
+        SELECT
+        <include refid="taskColumns"/>
+        FROM tasks
+        WHERE project_id = #{projectId}
+          AND deleted_at IS NULL
+        <if test="status != null">
+          AND task_status = #{status}
+        </if>
+        ORDER BY created_at ASC, id ASC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="countByProjectId" resultType="long">
+        SELECT COUNT(*)
+        FROM tasks
+        WHERE project_id = #{projectId}
+          AND deleted_at IS NULL
+        <if test="status != null">
+          AND task_status = #{status}
+        </if>
+    </select>
+
+    <update id="update">
+        UPDATE tasks
+        SET title = #{task.title},
+            description = #{task.description},
+            task_status = #{task.status},
+            priority = #{task.priority},
+            assignee_id = #{task.assigneeId},
+            due_at = #{task.dueAt},
+            version = version + 1,
+            updated_at = #{task.updatedAt}
+        WHERE id = #{task.id}
+          AND version = #{expectedVersion}
+          AND deleted_at IS NULL
+    </update>
+
+    <update id="softDelete">
+        UPDATE tasks
+        SET deleted_at = #{deletedAt},
+            updated_at = #{deletedAt},
+            version = version + 1
+        WHERE id = #{id}
+          AND version = #{expectedVersion}
+          AND deleted_at IS NULL
+    </update>
+
+    <select id="findDueBetween" resultMap="taskResultMap">
+        SELECT
+        <include refid="taskColumns"/>
+        FROM tasks
+        WHERE deleted_at IS NULL
+          AND task_status IN ('TODO', 'IN_PROGRESS')
+          AND due_at &gt;= #{from}
+          AND due_at &lt; #{to}
+        ORDER BY due_at ASC, id ASC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="countByStatus" timeout="3"
+            resultMap="taskStatusCountResultMap">
+        SELECT task_status, COUNT(*) AS task_count
+        FROM tasks
+        WHERE project_id = #{projectId}
+          AND deleted_at IS NULL
+        GROUP BY task_status
+        ORDER BY task_status ASC
+    </select>
+
+    <select id="countOverdue" resultType="long" timeout="3">
+        SELECT COUNT(*)
+        FROM tasks
+        WHERE project_id = #{projectId}
+          AND deleted_at IS NULL
+          AND task_status &lt;&gt; 'DONE'
+          AND due_at IS NOT NULL
+          AND due_at &lt; #{now}
+    </select>
+
+    <select id="countCompletedByAssignee" timeout="3"
+            resultMap="assigneeCompletedCountResultMap">
+        SELECT assignee_id, COUNT(*) AS task_count
+        FROM tasks
+        WHERE project_id = #{projectId}
+          AND deleted_at IS NULL
+          AND task_status = 'DONE'
+          AND assignee_id IS NOT NULL
+        GROUP BY assignee_id
+        ORDER BY assignee_id ASC
+    </select>
+</mapper>

@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.teamflow.core.comment.mapper.TaskCommentMapper">
+
+    <resultMap id="taskCommentResultMap"
+               type="com.teamflow.core.comment.domain.TaskComment">
+        <constructor>
+            <idArg column="id" javaType="string"/>
+            <arg column="task_id" javaType="string"/>
+            <arg column="author_id" javaType="string"/>
+            <arg column="content" javaType="string"/>
+            <arg column="created_at" javaType="string"/>
+        </constructor>
+    </resultMap>
+
+    <resultMap id="commentResponseResultMap"
+               type="com.teamflow.core.comment.dto.CommentResponse">
+        <constructor>
+            <idArg column="id" javaType="string"/>
+            <arg column="task_id" javaType="string"/>
+            <arg column="author_id" javaType="string"/>
+            <arg column="author_name" javaType="string"/>
+            <arg column="content" javaType="string"/>
+            <arg column="created_at" javaType="string"/>
+        </constructor>
+    </resultMap>
+
+    <sql id="commentColumns">
+        id,
+        task_id,
+        author_id,
+        content,
+        created_at
+    </sql>
+
+    <sql id="commentDetailColumns">
+        c.id,
+        c.task_id,
+        c.author_id,
+        u.display_name AS author_name,
+        c.content,
+        c.created_at
+    </sql>
+
+    <insert id="insert">
+        INSERT INTO task_comments (
+        <include refid="commentColumns"/>
+        ) VALUES (
+        #{id},
+        #{taskId},
+        #{authorId},
+        #{content},
+        #{createdAt}
+        )
+    </insert>
+
+    <select id="findDetailsByTaskId"
+            resultMap="commentResponseResultMap">
+        SELECT
+        <include refid="commentDetailColumns"/>
+        FROM task_comments c
+        INNER JOIN users u ON u.id = c.author_id
+        WHERE c.task_id = #{taskId}
+        ORDER BY c.created_at ASC, c.id ASC
+    </select>
+
+    <select id="findDetailById"
+            resultMap="commentResponseResultMap">
+        SELECT
+        <include refid="commentDetailColumns"/>
+        FROM task_comments c
+        INNER JOIN users u ON u.id = c.author_id
+        WHERE c.id = #{id}
+    </select>
+
+    <select id="findById" resultMap="taskCommentResultMap">
+        SELECT
+        <include refid="commentColumns"/>
+        FROM task_comments
+        WHERE id = #{id}
+    </select>
+
+    <delete id="deleteByIdAndAuthor">
+        DELETE FROM task_comments
+        WHERE id = #{id}
+          AND author_id = #{authorId}
+    </delete>
+</mapper>

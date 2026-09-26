@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.teamflow.core.file.mapper.AttachmentMapper">
+
+    <resultMap id="attachmentResultMap"
+               type="com.teamflow.core.file.domain.Attachment">
+        <constructor>
+            <idArg column="id" javaType="string"/>
+            <arg column="task_id" javaType="string"/>
+            <arg column="uploader_id" javaType="string"/>
+            <arg column="original_name" javaType="string"/>
+            <arg column="storage_name" javaType="string"/>
+            <arg column="storage_path" javaType="string"/>
+            <arg column="content_type" javaType="string"/>
+            <arg column="file_size" javaType="_long"/>
+            <arg column="sha256" javaType="string"/>
+            <arg column="created_at" javaType="string"/>
+        </constructor>
+    </resultMap>
+
+    <sql id="attachmentColumns">
+        id,
+        task_id,
+        uploader_id,
+        original_name,
+        storage_name,
+        storage_path,
+        content_type,
+        file_size,
+        sha256,
+        created_at
+    </sql>
+
+    <insert id="insert">
+        INSERT INTO attachments (
+        <include refid="attachmentColumns"/>
+        ) VALUES (
+        #{id},
+        #{taskId},
+        #{uploaderId},
+        #{originalName},
+        #{storageName},
+        #{storagePath},
+        #{contentType},
+        #{size},
+        #{sha256},
+        #{createdAt}
+        )
+    </insert>
+
+    <select id="findById" resultMap="attachmentResultMap">
+        SELECT
+        <include refid="attachmentColumns"/>
+        FROM attachments
+        WHERE id = #{id}
+    </select>
+
+    <select id="findByIdForUpdate" resultMap="attachmentResultMap">
+        SELECT
+        <include refid="attachmentColumns"/>
+        FROM attachments
+        WHERE id = #{id}
+        FOR UPDATE
+    </select>
+
+    <select id="findByTaskId" resultMap="attachmentResultMap">
+        SELECT
+        <include refid="attachmentColumns"/>
+        FROM attachments
+        WHERE task_id = #{taskId}
+        ORDER BY created_at ASC, id ASC
+    </select>
+
+    <delete id="deleteById">
+        DELETE FROM attachments
+        WHERE id = #{id}
+    </delete>
+</mapper>
